@@ -19,6 +19,7 @@ if [ "${DISABLE_DB_MIGRATIONS}" != "true" ] && [ ! -f /app/docker-data/db_status
 
     # Mark initialization as done
     echo "Successfuly migrated DB!"
+    mkdir -p /app/docker-data
     touch /app/docker-data/db_status
 fi
 
