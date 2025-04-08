@@ -1,5 +1,6 @@
 {
   "schemaVersion": 2,
   "dockerfilePath": "./packages/twenty-docker/twenty/Dockerfile",
-  "context": "./packages/twenty-docker/twenty"
+  "context": "."
 }
+
