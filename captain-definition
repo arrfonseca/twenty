@@ -1,4 +1,4 @@
 {
   "schemaVersion": 2,
-  "dockerComposeFile": "packages/twenty-docker/docker-compose.yml"
+  "imageName": "twentycrm/twenty:latest"
 }
