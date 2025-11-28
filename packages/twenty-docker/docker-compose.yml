@@ -3,57 +3,60 @@ name: twenty
 services:
   server:
     image: twentycrm/twenty:${TAG:-latest}
-    volumes:
-      - server-local-data:/app/packages/twenty-server/.local-storage
     ports:
       - "3000:3000"
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
     environment:
       NODE_PORT: 3000
       PG_DATABASE_URL: ${PG_DATABASE_URL}
       SERVER_URL: ${SERVER_URL}
       NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL}
       REDIS_URL: ${REDIS_URL}
-      DISABLE_DB_MIGRATIONS: ${DISABLE_DB_MIGRATIONS}
-      DISABLE_CRON_JOBS_REGISTRATION: ${DISABLE_CRON_JOBS_REGISTRATION}
       STORAGE_TYPE: ${STORAGE_TYPE}
       APP_SECRET: ${APP_SECRET}
+      DISABLE_DB_MIGRATIONS: ${DISABLE_DB_MIGRATIONS}
+      DISABLE_CRON_JOBS_REGISTRATION: ${DISABLE_CRON_JOBS_REGISTRATION}
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:3000/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     restart: always
 
   worker:
     image: twentycrm/twenty:${TAG:-latest}
+    command: ["yarn", "worker:prod"]
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
-    command: ["yarn", "worker:prod"]
     environment:
       PG_DATABASE_URL: ${PG_DATABASE_URL}
       SERVER_URL: ${SERVER_URL}
       REDIS_URL: ${REDIS_URL}
-      DISABLE_DB_MIGRATIONS: "true"
-      DISABLE_CRON_JOBS_REGISTRATION: "true"
       STORAGE_TYPE: ${STORAGE_TYPE}
       APP_SECRET: ${APP_SECRET}
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
     depends_on:
-      db:
-        condition: service_healthy
       server:
-        condition: service_healthy
+        condition: service_started
     restart: always
 
   db:
     image: postgres:16
-    volumes:
-      - db-data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: ${PG_DATABASE_NAME}
       POSTGRES_PASSWORD: ${PG_DATABASE_PASSWORD}
       POSTGRES_USER: ${PG_DATABASE_USER}
+    volumes:
+      - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: pg_isready -U ${PG_DATABASE_USER} -h localhost -d postgres
+      test: ["CMD", "pg_isready", "-U", "${PG_DATABASE_USER}", "-h", "localhost", "-d", "${PG_DATABASE_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -61,13 +64,13 @@ services:
 
   redis:
     image: redis
-    restart: always
     command: ["--maxmemory-policy", "noeviction"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: always
 
 volumes:
   db-data:
